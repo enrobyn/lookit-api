@@ -1,0 +1,77 @@
+# Quick Setup
+#
+# docker-compose up -d postgres rabbitmq
+# docker-compose run --rm web python manage.py migrate
+# docker-compose run --rm web python manage.py createsuperuser
+# docker-compose up -d
+# docker-compose logs -f --tail 1000
+
+# Quick Teardown
+#
+# docker-compose down -v
+
+version: '3'
+
+volumes:
+  postgres_data_vol:
+    external: false
+
+services:
+
+  postgres:
+    image: postgres:9.6
+    command:
+      - /bin/bash
+      - -c
+      - echo "$$POSTGRES_INITDB" > /docker-entrypoint-initdb.d/commands.sh &&
+        chmod +x /docker-entrypoint-initdb.d/commands.sh &&
+        /docker-entrypoint.sh postgres
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_DB: lookit
+      POSTGRES_INITDB: |
+        sed -i -e 's/max_connections.*/max_connections = 5000/' /var/lib/postgresql/data/postgresql.conf
+        sed -i -e 's/#log_min_duration_statement = .*/log_min_duration_statement = 1000/' /var/lib/postgresql/data/postgresql.conf
+    volumes:
+      - "${POSTGRES_DATA_VOL:-postgres_data_vol}:/var/lib/postgresql/data/"
+    stdin_open: true
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - 5672:5672
+      - 15672:15672
+    stdin_open: true
+
+  worker:
+    image: quay.io/centerforopenscience/lookit:develop
+    command: celery -A project.celery.app worker -l INFO --maxtasksperchild 5
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - rabbitmq
+    environment:
+      C_FORCE_ROOT: 1
+      DEBUG: 'true'
+      DB_HOST: postgres
+      RABBITMQ_HOST: rabbitmq
+    stdin_open: true
+
+  web:
+    image: quay.io/centerforopenscience/lookit:develop
+    command: python manage.py runserver 0.0.0.0:8000
+    restart: unless-stopped
+    ports:
+      - 8000:8000
+    depends_on:
+      - postgres
+      - rabbitmq
+    links:
+      - postgres
+      - rabbitmq
+    environment:
+      DEBUG: 'true'
+      DB_HOST: postgres
+      RABBITMQ_HOST: rabbitmq
+    stdin_open: true
