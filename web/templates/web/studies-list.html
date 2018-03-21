@@ -54,7 +54,7 @@
                                 <p class="study-detail-caption">Here are some studies that we're currently running!</p> 
                             </div>
                               {% for obj in object_list %}
-                              <div class="col-xs-4">
+                              <div class="col-xs-12">
                                   <div class="study-list-panel thumbnail">
                                       <a class="no-link-formatting" href="{% url 'web:study-detail' uuid=obj.uuid %}">
                                           <div class="study-list-thumbnail-wrapper text-center">
@@ -71,7 +71,7 @@
                                               </div>
                                             {% endif %}
                                           </div>
-                                          <div class="caption">
+                                          <div class="caption study-summary">
                                               <h3>{{obj.name}}</h3>
                                               <p><em>{{obj.criteria}}</em></p>
                                               <p>{{obj.short_description}}</p>
