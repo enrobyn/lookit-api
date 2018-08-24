@@ -53,6 +53,8 @@ class StudyCreateView(ExperimenterLoginRequiredMixin, DjangoPermissionRequiredMi
         """
         user = self.request.user
         form.instance.metadata = self.extract_type_metadata()
+        # TODO: I suspect we need to validate the metadata here
+        print(form.instance.metadata)
         form.instance.creator = user
         form.instance.organization = user.organization
         self.object = form.save()
